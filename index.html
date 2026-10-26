@@ -1,0 +1,1015 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HACK THE SYSTEM</title>
+  <meta name="description" content="A cyberpunk logic puzzle game. Solve 10 fictional security puzzles before the 10-minute timer runs out.">
+  <meta name="theme-color" content="#05080a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%2305080a'/%3E%3Cpath d='M3 4l4 4-4 4M9 12h4' stroke='%2300e5ff' stroke-width='1.6' fill='none'/%3E%3C/svg%3E">
+  <style>
+:root {
+  --bg: #05080a;
+  --bg-panel: #0b1216;
+  --bg-raised: #111c22;
+  --border: #1d3a44;
+  --text: #d5e6ea;
+  --text-dim: #8fa8b0;
+  --cyan: #19e3ff;
+  --green: #3ddc84;
+  --red: #ff6b6b;
+  --amber: #ffc857;
+  --focus: #ffffff;
+  --mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(rgba(25, 227, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(25, 227, 255, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 16px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+}
+
+.skip-link {
+  position: absolute;
+  left: -999px;
+  top: 0;
+  background: var(--cyan);
+  color: #00262d;
+  padding: 8px 12px;
+  z-index: 10;
+}
+.skip-link:focus { left: 8px; top: 8px; }
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+[hidden] { display: none !important; }
+
+.topbar { text-align: center; padding: 20px 16px 8px; }
+.logo {
+  margin: 0;
+  font-size: clamp(1.4rem, 5vw, 2.2rem);
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+  text-shadow: 0 0 12px rgba(25, 227, 255, 0.35);
+}
+.logo span { color: var(--green); }
+.tagline { margin: 4px 0 0; color: var(--text-dim); font-size: 0.85rem; }
+
+main {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 8px 16px 24px;
+  flex: 1;
+}
+main:focus { outline: none; }
+
+.panel {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 0 0 1px rgba(25, 227, 255, 0.04), 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.panel-good { border-color: var(--green); }
+.panel-bad { border-color: var(--red); }
+
+h2 { margin: 0 0 12px; font-size: 1.25rem; color: var(--cyan); }
+h2:focus { outline: none; }
+.panel-good h2 { color: var(--green); }
+.panel-bad h2 { color: var(--red); }
+
+.rules { padding-left: 20px; }
+.rules li { margin-bottom: 8px; }
+
+.notice { padding: 12px; border: 1px solid var(--amber); border-radius: 6px; color: var(--amber); }
+.notice-error { border-color: var(--red); color: var(--red); }
+
+/* HUD */
+.hud {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.stat {
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 8px 6px;
+  text-align: center;
+}
+.stat-label { display: block; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-dim); }
+.stat-value { display: block; font-size: 1.3rem; font-weight: 700; color: var(--cyan); }
+.stat-value.warn { color: var(--amber); }
+
+.progress { height: 6px; background: var(--bg-raised); border-radius: 3px; overflow: hidden; margin-bottom: 12px; }
+.progress-bar { height: 100%; width: 0; background: var(--green); transition: width 0.3s ease; }
+
+/* Level nav */
+.level-nav { list-style: none; margin: 0 0 12px; padding: 0; display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.level-btn {
+  width: 100%;
+  min-height: 44px;
+  font-family: var(--mono);
+  font-size: 0.95rem;
+  color: var(--text);
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+.level-btn:hover:not(:disabled) { border-color: var(--cyan); }
+.level-btn.current { border-color: var(--cyan); box-shadow: 0 0 8px rgba(25, 227, 255, 0.4); color: var(--cyan); }
+.level-btn.solved { color: var(--green); border-color: #1f6b43; }
+.level-btn:disabled { color: #5c7279; cursor: not-allowed; background: #080d10; }
+
+/* Puzzle */
+.puzzle-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.badge { font-size: 0.75rem; padding: 2px 10px; border: 1px solid var(--border); border-radius: 999px; color: var(--green); }
+.briefing p { margin: 0 0 8px; overflow-wrap: anywhere; }
+.visual { margin: 12px 0; }
+
+.circuit {
+  margin: 0;
+  padding: 14px;
+  background: #050a0d;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--green);
+  overflow-x: auto;
+}
+
+.graph { width: 100%; height: auto; max-width: 600px; display: block; background: #050a0d; border: 1px solid var(--border); border-radius: 6px; }
+.graph .edge { stroke: #2f7080; stroke-width: 2; }
+.graph .edge-label-bg { fill: #050a0d; stroke: var(--border); }
+.graph .edge-label { fill: var(--amber); font: 12px var(--mono); }
+.graph .node { fill: #0b1c22; stroke: var(--cyan); stroke-width: 2; }
+.graph .node-source { stroke: var(--green); fill: #0d2a1c; }
+.graph .node-target { stroke: var(--amber); fill: #2a2410; }
+.graph .node-label { fill: var(--text); font: 700 16px var(--mono); }
+
+.maze { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 4px; max-width: 360px; }
+.cell {
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-weight: 700;
+}
+.cell-blocked { background: #2a1114; border-color: #6d2a31; color: var(--red); }
+.cell-start { background: #0d2a1c; border-color: var(--green); color: var(--green); }
+.cell-end { background: #2a2410; border-color: var(--amber); color: var(--amber); }
+
+.datalog { padding: 12px 14px; background: #050a0d; border: 1px solid var(--border); border-radius: 6px; }
+.datalog h3 { margin: 0 0 8px; font-size: 1rem; color: var(--green); }
+.datalog dl, .summary dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0; }
+.datalog dt, .summary dt { color: var(--text-dim); }
+.datalog dd, .summary dd { margin: 0; font-weight: 700; color: var(--text); overflow-wrap: anywhere; }
+.summary { margin: 16px 0; padding: 14px; background: #050a0d; border: 1px solid var(--border); border-radius: 6px; }
+.summary dd.final { color: var(--cyan); font-size: 1.3rem; }
+
+/* Form */
+.answer-form { margin-top: 16px; }
+.answer-form label { display: block; margin-bottom: 6px; color: var(--text-dim); }
+.answer-row { display: flex; gap: 8px; }
+input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: inherit;
+  font-size: 1rem; /* at least 16px so mobile browsers do not zoom on focus */
+  color: var(--text);
+  background: #050a0d;
+  border: 1px solid var(--cyan);
+  border-radius: 6px;
+}
+input[type="text"]:disabled { border-color: var(--border); color: var(--text-dim); }
+.help { margin: 6px 0 0; font-size: 0.8rem; color: var(--text-dim); }
+
+.btn {
+  min-height: 44px;
+  padding: 8px 18px;
+  font: inherit;
+  color: var(--text);
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.btn:hover:not(:disabled) { border-color: var(--cyan); }
+.btn:disabled { color: #5c7279; cursor: not-allowed; }
+.btn-primary { background: var(--cyan); color: #00262d; border-color: var(--cyan); font-weight: 700; }
+.btn-primary:hover:not(:disabled) { background: #6eeeff; }
+.btn-primary:disabled { background: #1a4a54; color: #7aa0a8; border-color: #1a4a54; }
+.btn-danger { border-color: #7a3238; color: var(--red); }
+.btn-danger.armed { background: var(--red); color: #2a0a0d; border-color: var(--red); font-weight: 700; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+
+.hint-box { margin-top: 14px; padding: 10px 12px; border: 1px solid var(--amber); border-radius: 6px; color: var(--amber); }
+.feedback { margin-top: 14px; min-height: 1.5em; padding: 0; font-weight: 700; }
+.feedback:empty { display: none; }
+.feedback-good { color: var(--green); }
+.feedback-bad { color: var(--red); }
+.feedback-warn { color: var(--amber); }
+.explanation { margin-top: 10px; padding: 10px 12px; border-left: 3px solid var(--green); background: #08140e; border-radius: 0 6px 6px 0; }
+
+.share-status { min-height: 1.5em; color: var(--text-dim); }
+.share-field { width: 100%; margin-top: 6px; }
+
+.footer { text-align: center; padding: 12px 16px 20px; color: var(--text-dim); font-size: 0.75rem; }
+
+/* Mobile */
+@media (max-width: 560px) {
+  body { font-size: 15px; }
+  .panel { padding: 14px; }
+  .hud { grid-template-columns: repeat(3, 1fr); }
+  .stat-value { font-size: 1.1rem; }
+  .level-nav { grid-template-columns: repeat(5, 1fr); }
+  .answer-row { flex-direction: column; }
+  .actions .btn { flex: 1 1 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to game</a>
+
+  <header class="topbar">
+    <h1 class="logo">HACK<span>_</span>THE<span>_</span>SYSTEM</h1>
+    <p class="tagline">Fictional puzzles. Simulated systems. Nothing real is hacked.</p>
+  </header>
+
+  <main id="main" tabindex="-1">
+    <noscript><p class="notice">This game needs JavaScript. Please enable it and reload.</p></noscript>
+    <p id="loading" class="notice" role="status">Loading mission data...</p>
+    <p id="load-error" class="notice notice-error" role="alert" hidden></p>
+
+    <!-- INTRO -->
+    <section id="screen-intro" class="screen panel" aria-labelledby="intro-title" hidden>
+      <h2 id="intro-title">Mission briefing</h2>
+      <ul class="rules">
+        <li>Solve all <strong>10 puzzles</strong> in order before the <strong>10:00</strong> timer hits zero.</li>
+        <li>Each solved level: <strong>+100</strong> credits. A wrong answer: <strong>-10</strong> credits (never below 0) and it resets your streak.</li>
+        <li>A hint costs <strong>25</strong> credits the first time you ask for it on a level.</li>
+        <li>Final score = credits + time bonus (1 point for every 5 seconds left, only if you finish).</li>
+      </ul>
+      <p>Your best score on this device: <strong id="intro-best">none yet</strong></p>
+      <button id="btn-start" class="btn btn-primary" type="button">Start hack</button>
+    </section>
+
+    <!-- PLAYING -->
+    <section id="screen-play" class="screen" aria-label="Game" hidden>
+      <div class="hud" role="group" aria-label="Game status">
+        <div class="stat"><span class="stat-label">Time</span><span id="stat-time" class="stat-value" role="timer">10:00</span></div>
+        <div class="stat"><span class="stat-label">Credits</span><span id="stat-credits" class="stat-value">0</span></div>
+        <div class="stat"><span class="stat-label">Streak</span><span id="stat-streak" class="stat-value">0</span></div>
+        <div class="stat"><span class="stat-label">Solved</span><span id="stat-solved" class="stat-value">0/10</span></div>
+        <div class="stat"><span class="stat-label">Hints</span><span id="stat-hints" class="stat-value">0</span></div>
+      </div>
+
+      <div class="progress" aria-hidden="true"><div id="progress-bar" class="progress-bar"></div></div>
+
+      <nav aria-label="Level selection">
+        <ol id="level-nav" class="level-nav"></ol>
+      </nav>
+
+      <article class="panel puzzle" aria-labelledby="puzzle-title">
+        <div class="puzzle-head">
+          <h2 id="puzzle-title"></h2>
+          <span id="puzzle-difficulty" class="badge"></span>
+        </div>
+        <div id="puzzle-briefing" class="briefing"></div>
+        <div id="puzzle-visual" class="visual"></div>
+
+        <form id="answer-form" class="answer-form" autocomplete="off" novalidate>
+          <label for="answer-input">Your answer</label>
+          <div class="answer-row">
+            <input id="answer-input" name="answer" type="text" inputmode="text" maxlength="64"
+                   autocapitalize="off" autocorrect="off" spellcheck="false" aria-describedby="answer-help feedback">
+            <button id="btn-submit" class="btn btn-primary" type="submit">Submit</button>
+          </div>
+          <p id="answer-help" class="help"></p>
+        </form>
+
+        <div class="actions">
+          <button id="btn-hint" class="btn" type="button">Hint (-25 credits)</button>
+          <button id="btn-restart" class="btn btn-danger" type="button">Restart</button>
+        </div>
+
+        <div id="hint-box" class="hint-box" hidden>
+          <strong>Hint:</strong> <span id="hint-text"></span>
+        </div>
+        <div id="feedback" class="feedback" role="status" aria-live="polite"></div>
+        <div id="explanation" class="explanation" hidden></div>
+      </article>
+    </section>
+
+    <!-- GAME OVER -->
+    <section id="screen-gameover" class="screen panel panel-bad" aria-labelledby="gameover-title" hidden>
+      <h2 id="gameover-title">Connection lost</h2>
+      <p>Time ran out before the system was overridden.</p>
+      <div class="summary" id="gameover-summary"></div>
+      <div class="actions">
+        <button id="btn-gameover-share" class="btn" type="button">Share score</button>
+        <button id="btn-gameover-again" class="btn btn-primary" type="button">Try again</button>
+      </div>
+      <p class="share-status" id="gameover-share-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <!-- VICTORY -->
+    <section id="screen-victory" class="screen panel panel-good" aria-labelledby="victory-title" hidden>
+      <h2 id="victory-title">System overridden</h2>
+      <p>All 10 levels cleared. Access granted.</p>
+      <div class="summary" id="victory-summary"></div>
+      <div class="actions">
+        <button id="btn-victory-share" class="btn" type="button">Share score</button>
+        <button id="btn-victory-again" class="btn btn-primary" type="button">Play again</button>
+      </div>
+      <p class="share-status" id="victory-share-status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p>High scores are stored only in this browser (localStorage) and are not secure or tamper-proof.</p>
+  </footer>
+
+<script>
+/*
+ * HACK THE SYSTEM - pure game rules (no DOM, no network).
+ *
+ * All scoring, timer and progression rules live here so they can be tested
+ * directly. Time is always passed in as `now` (milliseconds) by the caller.
+ *
+ * NOTE: scores are calculated in the browser and can be manipulated by a
+ * determined player. This is a single-player prototype, not a secure ranking.
+ */
+(function (root) {
+  'use strict';
+
+  var DEFAULT_CONFIG = {
+    time_limit_seconds: 600,
+    completion_reward: 100,
+    wrong_penalty: 10,
+    hint_cost: 25,
+    time_bonus_divisor: 5,
+    level_count: 10
+  };
+
+  function createState(config) {
+    var cfg = Object.assign({}, DEFAULT_CONFIG, config || {});
+    var completed = [];
+    for (var i = 0; i < cfg.level_count; i += 1) completed.push(false);
+    return {
+      config: cfg,
+      phase: 'intro',            // intro | playing | gameover | victory
+      credits: 0,
+      streak: 0,
+      bestStreak: 0,
+      completed: completed,
+      current: 0,                // index of the level being shown
+      hintsUsed: 0,
+      hintedLevels: {},          // level index -> true once the hint was paid for
+      wrongAnswers: 0,
+      fragments: {},             // level index -> canonical answer (for Level 10 log)
+      endsAt: null,
+      remainingAtEnd: null,
+      timeBonus: 0,
+      finalScore: null
+    };
+  }
+
+  function start(state, now) {
+    var fresh = createState(state.config);
+    Object.keys(fresh).forEach(function (key) { state[key] = fresh[key]; });
+    state.phase = 'playing';
+    state.endsAt = now + state.config.time_limit_seconds * 1000;
+    return state;
+  }
+
+  function remainingSeconds(state, now) {
+    if (state.phase === 'intro') return state.config.time_limit_seconds;
+    if (state.phase !== 'playing') return state.remainingAtEnd == null ? 0 : state.remainingAtEnd;
+    return Math.max(0, Math.ceil((state.endsAt - now) / 1000));
+  }
+
+  function completedCount(state) {
+    return state.completed.filter(Boolean).length;
+  }
+
+  function firstIncomplete(state) {
+    return state.completed.indexOf(false);
+  }
+
+  function finish(state, phase, now) {
+    state.remainingAtEnd = phase === 'victory' ? remainingSeconds(state, now) : 0;
+    state.phase = phase;
+    state.timeBonus = phase === 'victory'
+      ? Math.floor(state.remainingAtEnd / state.config.time_bonus_divisor)
+      : 0;
+    state.finalScore = state.credits + state.timeBonus;
+  }
+
+  /** Ends the run if time has run out. Returns true when the phase changed. */
+  function tick(state, now) {
+    if (state.phase === 'playing' && now >= state.endsAt) {
+      finish(state, 'gameover', now);
+      return true;
+    }
+    return false;
+  }
+
+  /** A level can be opened if it is already solved or is the next unsolved one. */
+  function canOpen(state, index) {
+    if (index < 0 || index >= state.completed.length) return false;
+    return state.completed[index] || index === firstIncomplete(state);
+  }
+
+  function selectLevel(state, index) {
+    if (state.phase !== 'playing' || !canOpen(state, index)) return false;
+    state.current = index;
+    return true;
+  }
+
+  /** Returns {awarded: boolean}. A level can only ever pay out once. */
+  function applyCorrect(state, index, fragment, now) {
+    tick(state, now);
+    if (state.phase !== 'playing' || state.completed[index] || index !== firstIncomplete(state)) {
+      return { awarded: false };
+    }
+    state.completed[index] = true;
+    state.credits += state.config.completion_reward;
+    state.streak += 1;
+    state.bestStreak = Math.max(state.bestStreak, state.streak);
+    if (fragment != null) state.fragments[index] = fragment;
+    var next = firstIncomplete(state);
+    if (next === -1) {
+      finish(state, 'victory', now);
+    } else {
+      state.current = next;
+    }
+    return { awarded: true };
+  }
+
+  /** Returns {penalised: boolean}. */
+  function applyWrong(state, index, now) {
+    tick(state, now);
+    if (state.phase !== 'playing' || state.completed[index]) return { penalised: false };
+    state.credits = Math.max(0, state.credits - state.config.wrong_penalty);
+    state.streak = 0;
+    state.wrongAnswers += 1;
+    return { penalised: true };
+  }
+
+  /**
+   * First hint request for a level costs credits; asking for the same level's
+   * hint again just shows it again for free. Returns {charged: boolean, allowed: boolean}.
+   */
+  function applyHint(state, index, now) {
+    tick(state, now);
+    if (state.phase !== 'playing' || state.completed[index]) return { allowed: false, charged: false };
+    if (state.hintedLevels[index]) return { allowed: true, charged: false };
+    state.hintedLevels[index] = true;
+    state.hintsUsed += 1;
+    state.credits = Math.max(0, state.credits - state.config.hint_cost);
+    return { allowed: true, charged: true };
+  }
+
+  function shareText(state) {
+    return 'HACK THE SYSTEM - I scored ' + state.finalScore + ' (' + completedCount(state) +
+      '/' + state.config.level_count + ' levels, ' + state.hintsUsed + ' hints, best streak ' +
+      state.bestStreak + '). Can you beat it?';
+  }
+
+  var api = {
+    DEFAULT_CONFIG: DEFAULT_CONFIG,
+    createState: createState,
+    start: start,
+    remainingSeconds: remainingSeconds,
+    completedCount: completedCount,
+    firstIncomplete: firstIncomplete,
+    tick: tick,
+    canOpen: canOpen,
+    selectLevel: selectLevel,
+    applyCorrect: applyCorrect,
+    applyWrong: applyWrong,
+    applyHint: applyHint,
+    shareText: shareText
+  };
+
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  root.HTSLogic = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+<script>
+/* Fully static game data and local answer validation. No server or network calls. */
+(function (root) {
+  'use strict';
+  var DATA = [{"id": 1, "title": "Handshake", "difficulty": "Easy", "briefing": ["The gateway greets you with a 3-digit access code. Four intercepted clues describe it:", "1. All three digits are different.", "2. The first digit is odd.", "3. The three digits add up to 12.", "4. The last digit is exactly twice the middle digit."], "visual": null, "placeholder": "3 digits", "format_help": "Enter the 3-digit code, e.g. 123.", "hint": "Only a few odd first digits are possible. For each one, list the (middle, last) pairs where last = 2 x middle, then check the sum.", "explanation": "The first digit is odd, the last digit is twice the middle one, and the sum is 12. The remaining two digits must add up to 12 minus the first digit and equal 3 x middle, so the first digit must be a multiple of 3: either 3 or 9. First digit 3 gives 336, which repeats a digit. First digit 9 gives middle 1 and last 2. The code is 912.", "answer": "912"}, {"id": 2, "title": "Logic Gate", "difficulty": "Easy", "briefing": ["A simulated circuit guards the next door. Inputs: A = 1, B = 0, C = 1, D = 0.", "Evaluate the gates top to bottom, then read the three outputs X, Y and Z.", "Answer with the three output bits in order X Y Z, e.g. 010."], "visual": {"type": "circuit", "lines": ["G1 = A AND B", "G2 = C OR D", "G3 = G1 XOR G2", "G4 = NOT G3", "X  = G3", "Y  = G4 AND A", "Z  = NOT (G2 AND G1)"]}, "placeholder": "3 bits (XYZ)", "format_help": "Three bits, e.g. 010.", "hint": "Work in order: G1 first, then G2, then G3 and G4. X, Y and Z only use gates you have already computed.", "explanation": "G1 = 1 AND 0 = 0. G2 = 1 OR 0 = 1. G3 = 0 XOR 1 = 1. G4 = NOT 1 = 0. So X = 1, Y = 0 AND 1 = 0, Z = NOT (1 AND 0) = 1. Output: 101.", "answer": "101"}, {"id": 3, "title": "Packet Route", "difficulty": "Medium", "briefing": ["A data packet must travel from node A to node G. Each link shows its latency in milliseconds, and links work in both directions.", "Find the route with the lowest total latency. Do not visit a node twice.", "Answer with the nodes in order, e.g. A-B-C."], "visual": {"type": "graph", "nodes": [{"id": "A", "x": 50, "y": 150}, {"id": "B", "x": 170, "y": 60}, {"id": "C", "x": 170, "y": 240}, {"id": "D", "x": 310, "y": 70}, {"id": "E", "x": 400, "y": 230}, {"id": "F", "x": 480, "y": 80}, {"id": "G", "x": 560, "y": 170}], "edges": [{"from": "A", "to": "B", "weight": 4}, {"from": "A", "to": "C", "weight": 2}, {"from": "B", "to": "C", "weight": 1}, {"from": "B", "to": "D", "weight": 5}, {"from": "C", "to": "E", "weight": 10}, {"from": "D", "to": "E", "weight": 2}, {"from": "D", "to": "F", "weight": 6}, {"from": "E", "to": "G", "weight": 3}, {"from": "F", "to": "G", "weight": 2}], "source": "A", "target": "G"}, "placeholder": "e.g. A-B-C", "format_help": "Node letters in order, separated by dashes, spaces or nothing.", "hint": "The tempting direct link C-E costs 10. Compare routes that detour through B and D instead.", "explanation": "A-C-B-D-E-G costs 2 + 1 + 5 + 2 + 3 = 13 ms. The next best route, A-B-D-E-G, costs 14 ms, and A-C-E-G costs 15 ms. Route A-C-B-D-E-G is the only cheapest one.", "answer": "ACBDEG"}, {"id": 4, "title": "Cipher Lock", "difficulty": "Medium", "briefing": ["The lock displays an encrypted word: ISHJRVBA", "It was encrypted with a Caesar cipher: every letter was moved forward 7 places in the alphabet (A becomes H, B becomes I, and so on, wrapping from Z back to A).", "Decrypt it by moving every letter back 7 places. Remember this word - you will need it again."], "visual": null, "placeholder": "decoded word", "format_help": "Letters only. Upper or lower case both work.", "hint": "I -> B and S -> L. Shift each remaining letter back 7 the same way; wrap around from A to Z when needed.", "explanation": "Shifting each letter back 7 places turns I-S-H-J-R-V-B-A into B-L-A-C-K-O-U-T. The word is BLACKOUT.", "answer": "BLACKOUT"}, {"id": 5, "title": "Binary Breach", "difficulty": "Medium", "briefing": ["The breach panel shows a binary value: 11010110", "Convert it to a decimal number. Remember it - you will need it again."], "visual": null, "placeholder": "decimal number", "format_help": "Whole number, digits only.", "hint": "From the left the place values are 128, 64, 32, 16, 8, 4, 2, 1. Add up the places that hold a 1.", "explanation": "11010110 has ones in the 128, 64, 16, 4 and 2 places: 128 + 64 + 16 + 4 + 2 = 214.", "answer": "214"}, {"id": 6, "title": "Memory Leak", "difficulty": "Medium", "briefing": ["A leaking memory log shows five values: 5, 14, 41, 122, 365, ...", "Each value is made from the one before it by the same fixed rule: multiply by a whole number, then add or subtract a whole number.", "What is the next value?"], "visual": null, "placeholder": "next number", "format_help": "Whole number, digits only.", "hint": "Compare 5 and 14. Multiplying by 3 gives 15, so what must be done to reach 14? Check that rule on 14 -> 41.", "explanation": "The rule is: multiply by 3, then subtract 1. 5 -> 14 -> 41 -> 122 -> 365, and 365 x 3 - 1 = 1094. This is the only whole-number rule of that form that fits all five values.", "answer": "1094"}, {"id": 7, "title": "Firewall Maze", "difficulty": "Hard", "briefing": ["Slip a packet from S to E through the firewall grid. # cells are blocked, . cells are open.", "Move one cell at a time: U (up), D (down), L (left), R (right). You cannot leave the grid or enter a # cell.", "Find the shortest route and enter it as a string of moves, e.g. RRD."], "visual": {"type": "grid", "rows": ["S.#...", "#.#.#.", "....#.", ".##...", ".#.##.", "#....E"]}, "placeholder": "e.g. RRDD", "format_help": "Moves using U, D, L, R. Spaces and commas are ignored.", "hint": "The shortest route needs exactly 10 moves, and it never moves up or left. Start by going right once, then down.", "explanation": "The only 10-move route is R D D R R D R R D D: right, down twice, right twice, down, right twice, down twice. Every other open path is longer.", "answer": "RDDRRDRRDD"}, {"id": 8, "title": "Root Access", "difficulty": "Hard", "briefing": ["The root console wants a secret number N. Everything you know:", "1. N is a 3-digit number.", "2. Divide N by 5: the remainder is 2.", "3. Divide N by 7: the remainder is 3.", "4. Divide N by 9: the remainder is 4.", "5. The digits of N add up to 13.", "6. N is odd."], "visual": null, "placeholder": "3-digit number", "format_help": "Whole number, digits only.", "hint": "Clues 2-4 repeat every 315, so there are only three 3-digit candidates. The last two clues tell them apart.", "explanation": "Clues 2-4 leave 157, 472 and 787. 472 is even, and 787 has digit sum 22. Only 157 is odd with digit sum 1 + 5 + 7 = 13.", "answer": "157"}, {"id": 9, "title": "Checksum", "difficulty": "Hard", "briefing": ["The vault verifies messages with a checksum. The rules:", "1. Give each letter its alphabet number: A = 1, B = 2, ... Z = 26.", "2. Multiply each letter's number by its position in the message (first letter = 1, second = 2, ...).", "3. Add all the products together.", "4. The checksum is that total divided by 97, keeping only the remainder.", "Compute the checksum of the message GATEWAY. Remember it - you will need it again."], "visual": null, "placeholder": "checksum number", "format_help": "Whole number, digits only.", "hint": "G=7, A=1, T=20, E=5, W=23, A=1, Y=25. Multiply by positions 1 to 7, then add. Subtract multiples of 97 from the total.", "explanation": "7x1 + 1x2 + 20x3 + 5x4 + 23x5 + 1x6 + 25x7 = 7 + 2 + 60 + 20 + 115 + 6 + 175 = 385. 385 = 3 x 97 + 94, so the checksum is 94.", "answer": "94"}, {"id": 10, "title": "System Override", "difficulty": "Expert", "briefing": ["The core is locked. The override key is built from data you recovered earlier (see the recovered data log).", "Write the key as four parts joined by dashes: WORD-NUMBER-CHECKSUM-SUM, where", "- WORD is the decoded word from Level 4,", "- NUMBER is the decimal value from Level 5,", "- CHECKSUM is the checksum from Level 9,", "- SUM is the sum of the digits of the Level 1 access code."], "visual": {"type": "log"}, "placeholder": "WORD-NUMBER-CHECKSUM-SUM", "format_help": "Four parts separated by dashes. Upper or lower case both work.", "hint": "Level 1's code is the sum-of-digits part: add its three digits. The other three parts are copied directly from Levels 4, 5 and 9.", "explanation": "Level 4 gave BLACKOUT, Level 5 gave 214, Level 9 gave 94, and the Level 1 code 912 has digit sum 9 + 1 + 2 = 12. The key is BLACKOUT-214-94-12.", "answer": "BLACKOUT-214-94-12"}];
+  var CONFIG = { time_limit_seconds: 600, completion_reward: 100, wrong_penalty: 10, hint_cost: 25, time_bonus_divisor: 5, level_count: DATA.length };
+  function loadConfig() { return Promise.resolve(Object.assign({}, CONFIG)); }
+  function loadLevels() { return Promise.resolve(DATA.map(function (d) { var c = Object.assign({}, d); delete c.answer; delete c.hint; delete c.explanation; return c; })); }
+  function normalize(id, raw) {
+    var s = String(raw || '');
+    if (s.length > 64 || !s.trim()) return null;
+    if (id === 1) return /^[0-9]+$/.test(s.replace(/[\s-]/g, '')) ? s.replace(/[\s-]/g, '') : null;
+    if (id === 2) return /^[01]+$/.test(s.replace(/[\s,-]/g, '')) ? s.replace(/[\s,-]/g, '') : null;
+    if (id === 3) return s.replace(/[^a-z]/gi, '').toUpperCase() || null;
+    if (id === 4) return s.replace(/[^a-z]/gi, '').toUpperCase() || null;
+    if ([5,6,8,9].indexOf(id) >= 0) return /^[0-9]{1,12}$/.test(s.trim()) ? String(Number(s.trim())) : null;
+    if (id === 7) return /^[UDLR]+$/i.test(s.replace(/[\s,-]/g, '')) ? s.replace(/[\s,-]/g, '').toUpperCase() : null;
+    if (id === 10) { var p = s.trim().split(/[^A-Za-z0-9]+/).filter(Boolean); if (p.length !== 4 || !/^[a-z]+$/i.test(p[0]) || !p.slice(1).every(function(x){return /^\d+$/.test(x)})) return null; return p[0].toUpperCase()+'-'+Number(p[1])+'-'+Number(p[2])+'-'+Number(p[3]); }
+    return null;
+  }
+  function routeValid(route, visual) {
+    var nodes = route.split(''); if (nodes[0] !== visual.source || nodes[nodes.length-1] !== visual.target || new Set(nodes).size !== nodes.length) return false;
+    var cost = 0;
+    for (var i=1;i<nodes.length;i++) { var e=visual.edges.find(function(x){return (x.from===nodes[i-1]&&x.to===nodes[i])||(x.to===nodes[i-1]&&x.from===nodes[i]);}); if(!e)return false; cost += e.weight; }
+    var best=Infinity; function walk(n, seen, sum) { if(sum>=best)return; if(n===visual.target){best=sum;return;} visual.edges.forEach(function(e){var next=e.from===n?e.to:e.to===n?e.from:null;if(next&&!seen.has(next)){var ns=new Set(seen);ns.add(next);walk(next,ns,sum+e.weight);}}); }
+    walk(visual.source,new Set([visual.source]),0); return cost===best;
+  }
+  function mazeValid(moves, rows) {
+    var grid=rows.map(function(r){return r.split('');}), sr=-1,sc=-1,er=-1,ec=-1;
+    grid.forEach(function(row,r){row.forEach(function(c,col){if(c==='S'){sr=r;sc=col;}if(c==='E'){er=r;ec=col;}});});
+    var r=sr,c=sc; var delta={U:[-1,0],D:[1,0],L:[0,-1],R:[0,1]};
+    for(var i=0;i<moves.length;i++){r+=delta[moves[i]][0];c+=delta[moves[i]][1];if(r<0||r>=grid.length||c<0||c>=grid[r].length||grid[r][c]==='#')return false;}
+    if(r!==er||c!==ec)return false;
+    var dist=grid.map(function(row){return row.map(function(){return Infinity;});}),q=[[sr,sc,0]];dist[sr][sc]=0;
+    for(var qi=0;qi<q.length;qi++){var z=q[qi];Object.keys(delta).forEach(function(k){var nr=z[0]+delta[k][0],nc=z[1]+delta[k][1];if(nr>=0&&nr<grid.length&&nc>=0&&nc<grid[nr].length&&grid[nr][nc]!=='#'&&dist[nr][nc]===Infinity){dist[nr][nc]=z[2]+1;q.push([nr,nc,z[2]+1]);}});}
+    return moves.length===dist[er][ec];
+  }
+  function checkAnswer(levelId, answer) {
+    var d=DATA.find(function(x){return x.id===Number(levelId);}); if(!d)return Promise.resolve({correct:false});
+    var n=normalize(d.id,answer), ok=false;
+    if(n!==null){if(d.id===3)ok=routeValid(n,d.visual);else if(d.id===7)ok=mazeValid(n,d.visual.rows);else ok=n===d.answer;}
+    return Promise.resolve(ok?{correct:true,fragment:d.id===3?n.split('').join('-'):n,explanation:d.explanation}:{correct:false});
+  }
+  function fetchHint(levelId) { var d=DATA.find(function(x){return x.id===Number(levelId);}); return d?Promise.resolve(d.hint):Promise.reject(new Error('Unknown level')); }
+  var SVG_NS='http://www.w3.org/2000/svg';
+  function el(tag, cls, txt){var n=document.createElement(tag);if(cls)n.className=cls;if(txt!=null)n.textContent=txt;return n;}
+  function svgEl(tag,attrs){var n=document.createElementNS(SVG_NS,tag);Object.keys(attrs||{}).forEach(function(k){n.setAttribute(k,String(attrs[k]));});return n;}
+  function renderVisual(visual,fragments){
+    if(!visual)return null;
+    if(visual.type==='circuit'){var pre=el('pre','circuit');pre.setAttribute('aria-label','Circuit definition');pre.textContent=visual.lines.join('\n');return pre;}
+    if(visual.type==='grid'){var wrap=el('div','maze');wrap.setAttribute('role','img');wrap.setAttribute('aria-label','Maze grid');wrap.style.setProperty('--cols',String(visual.rows[0].length));visual.rows.forEach(function(row){row.split('').forEach(function(cell){var cls='cell'+(cell==='#'?' cell-blocked':cell==='S'?' cell-start':cell==='E'?' cell-end':'');wrap.appendChild(el('div',cls,cell==='.'?'':cell));});});return wrap;}
+    if(visual.type==='graph'){var svg=svgEl('svg',{viewBox:'0 0 600 300',role:'img','class':'graph'});}
+    if(visual.type==='log'){var box=el('div','datalog');box.appendChild(el('h3',null,'Recovered data log'));var list=el('dl');[{i:0,l:'Level 1 access code'},{i:3,l:'Level 4 decoded word'},{i:4,l:'Level 5 decimal value'},{i:8,l:'Level 9 checksum'}].forEach(function(x){list.appendChild(el('dt',null,x.l));list.appendChild(el('dd',null,fragments[x.i]!=null?fragments[x.i]:'not recovered'));});box.appendChild(list);return box;}
+    return null;
+  }
+  // Graph renderer kept separate to avoid inserting untrusted HTML.
+  function renderGraph(v){var svg=svgEl('svg',{viewBox:'0 0 600 300',role:'img','class':'graph','aria-label':'Simulated network map'}), by={};v.nodes.forEach(function(n){by[n.id]=n;});v.edges.forEach(function(e){var a=by[e.from],b=by[e.to],mx=(a.x+b.x)/2,my=(a.y+b.y)/2;svg.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,'class':'edge'}));svg.appendChild(svgEl('rect',{x:mx-17,y:my-11,width:34,height:22,rx:4,'class':'edge-label-bg'}));var t=svgEl('text',{x:mx,y:my+5,'text-anchor':'middle','class':'edge-label'});t.textContent=e.weight+'ms';svg.appendChild(t);});v.nodes.forEach(function(n){svg.appendChild(svgEl('circle',{cx:n.x,cy:n.y,r:20,'class':'node'+(n.id===v.source?' node-source':'')+(n.id===v.target?' node-target':'')}));var t=svgEl('text',{x:n.x,y:n.y+6,'text-anchor':'middle','class':'node-label'});t.textContent=n.id;svg.appendChild(t);});return svg;}
+  var baseRender=renderVisual; renderVisual=function(v,f){if(v&&v.type==='graph')return renderGraph(v);return baseRender(v,f);};
+  root.HTSLevels={loadConfig:loadConfig,loadLevels:loadLevels,checkAnswer:checkAnswer,fetchHint:fetchHint,renderVisual:renderVisual};
+})(window);
+
+</script>
+<script>
+/*
+ * UI controller for HACK THE SYSTEM. Wires the DOM to the pure rules in
+ * game-logic.js and to the answer-checking API in levels.js.
+ */
+(function () {
+  'use strict';
+
+  var Logic = window.HTSLogic;
+  var Levels = window.HTSLevels;
+
+  var HIGH_SCORE_KEY = 'hts.highScore.v1';
+  var RESTART_CONFIRM_MS = 4000;
+
+  var state = Logic.createState();
+  var levels = [];
+  var timerId = null;
+  var submitting = false;      // blocks duplicate submissions while a check is in flight
+  var restartArmedUntil = 0;
+  var hintTextByLevel = {};    // level index -> hint text already paid for
+
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- safe storage ---------- */
+
+  function readHighScore() {
+    try {
+      var raw = window.localStorage.getItem(HIGH_SCORE_KEY);
+      var value = raw == null ? null : parseInt(raw, 10);
+      return Number.isFinite(value) && value >= 0 ? value : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function saveHighScore(score) {
+    var best = readHighScore();
+    if (best != null && best >= score) return false;
+    try {
+      window.localStorage.setItem(HIGH_SCORE_KEY, String(score));
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function showBest() {
+    var best = readHighScore();
+    $('intro-best').textContent = best == null ? 'none yet' : String(best);
+  }
+
+  /* ---------- screens ---------- */
+
+  var SCREENS = ['intro', 'play', 'gameover', 'victory'];
+
+  function showScreen(name, moveFocus) {
+    SCREENS.forEach(function (key) { $('screen-' + key).hidden = key !== name; });
+    var heading = document.querySelector('#screen-' + name + ' h2');
+    // Move focus to the new screen's heading for screen-reader users, except on first load
+    // (so the skip link stays the first Tab stop).
+    if (moveFocus !== false && heading && name !== 'play') { heading.setAttribute('tabindex', '-1'); heading.focus(); }
+  }
+
+  function formatTime(totalSeconds) {
+    var m = Math.floor(totalSeconds / 60);
+    var s = totalSeconds % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  /* ---------- rendering ---------- */
+
+  function renderHud() {
+    var now = Date.now();
+    var remaining = Logic.remainingSeconds(state, now);
+    var timeEl = $('stat-time');
+    timeEl.textContent = formatTime(remaining);
+    timeEl.classList.toggle('warn', state.phase === 'playing' && remaining <= 60);
+    $('stat-credits').textContent = String(state.credits);
+    $('stat-streak').textContent = String(state.streak);
+    $('stat-solved').textContent = Logic.completedCount(state) + '/' + state.config.level_count;
+    $('stat-hints').textContent = String(state.hintsUsed);
+    $('progress-bar').style.width = (Logic.completedCount(state) / state.config.level_count * 100) + '%';
+  }
+
+  function renderNav() {
+    var nav = $('level-nav');
+    nav.textContent = '';
+    levels.forEach(function (level, index) {
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'level-btn';
+      var solved = state.completed[index];
+      var open = Logic.canOpen(state, index);
+      btn.textContent = solved ? String(level.id) + '✓' : String(level.id);
+      btn.disabled = !open;
+      btn.setAttribute('data-level', String(level.id));
+      var status = solved ? 'solved' : (open ? 'unlocked' : 'locked');
+      btn.setAttribute('aria-label', 'Level ' + level.id + ', ' + level.title + ', ' + status);
+      if (index === state.current) { btn.classList.add('current'); btn.setAttribute('aria-current', 'step'); }
+      if (solved) btn.classList.add('solved');
+      btn.addEventListener('click', function () { onSelectLevel(index); });
+      li.appendChild(btn);
+      nav.appendChild(li);
+    });
+  }
+
+  function renderPuzzle(options) {
+    var opts = options || {};
+    var level = levels[state.current];
+    var solved = state.completed[state.current];
+    $('puzzle-title').textContent = 'Level ' + level.id + ': ' + level.title;
+    $('puzzle-difficulty').textContent = level.difficulty;
+
+    var briefing = $('puzzle-briefing');
+    briefing.textContent = '';
+    level.briefing.forEach(function (line) {
+      var p = document.createElement('p');
+      p.textContent = line;
+      briefing.appendChild(p);
+    });
+
+    var visualBox = $('puzzle-visual');
+    visualBox.textContent = '';
+    var visual = Levels.renderVisual(level.visual, state.fragments);
+    if (visual) visualBox.appendChild(visual);
+
+    $('answer-help').textContent = level.format_help;
+    var input = $('answer-input');
+    input.placeholder = level.placeholder;
+    input.disabled = solved;
+    $('btn-submit').disabled = solved || submitting;
+    $('btn-hint').disabled = solved;
+    $('btn-hint').textContent = state.hintedLevels[state.current]
+      ? 'Show hint again (free)'
+      : 'Hint (-' + state.config.hint_cost + ' credits)';
+
+    var hintBox = $('hint-box');
+    var hintText = hintTextByLevel[state.current];
+    hintBox.hidden = !hintText || solved;
+    $('hint-text').textContent = hintText || '';
+
+    if (!opts.keepFeedback) {
+      $('feedback').textContent = '';
+      $('feedback').className = 'feedback';
+    }
+    if (!opts.keepExplanation) {
+      var explanation = $('explanation');
+      explanation.hidden = true;
+      explanation.textContent = '';
+    }
+    if (!opts.keepInput) input.value = '';
+  }
+
+  function renderAll(options) {
+    renderHud();
+    renderNav();
+    renderPuzzle(options);
+  }
+
+  function setFeedback(kind, message) {
+    var box = $('feedback');
+    box.className = 'feedback feedback-' + kind;
+    box.textContent = message;
+  }
+
+  /* ---------- end screens ---------- */
+
+  function summaryRows(rows) {
+    var dl = document.createElement('dl');
+    rows.forEach(function (row) {
+      var dt = document.createElement('dt'); dt.textContent = row[0];
+      var dd = document.createElement('dd'); dd.textContent = row[1];
+      if (row[2]) dd.className = row[2];
+      dl.appendChild(dt); dl.appendChild(dd);
+    });
+    return dl;
+  }
+
+  function showEndScreen() {
+    stopTimer();
+    var isVictory = state.phase === 'victory';
+    var newBest = saveHighScore(state.finalScore);
+    var best = readHighScore();
+    var rows = [
+      ['Levels solved', Logic.completedCount(state) + '/' + state.config.level_count],
+      ['Credits', String(state.credits)],
+      ['Time bonus', '+' + state.timeBonus],
+      ['Hints used', String(state.hintsUsed)],
+      ['Wrong answers', String(state.wrongAnswers)],
+      ['Best streak', String(state.bestStreak)],
+      ['Final score', String(state.finalScore), 'final'],
+      ['Best on this device', best == null ? 'unavailable' : String(best) + (newBest ? ' (new!)' : '')]
+    ];
+    var target = $(isVictory ? 'victory-summary' : 'gameover-summary');
+    target.textContent = '';
+    target.appendChild(summaryRows(rows));
+    $((isVictory ? 'victory' : 'gameover') + '-share-status').textContent = '';
+    showScreen(isVictory ? 'victory' : 'gameover');
+  }
+
+  /* ---------- timer ---------- */
+
+  function stopTimer() {
+    if (timerId != null) { window.clearInterval(timerId); timerId = null; }
+  }
+
+  function onTick() {
+    var changed = Logic.tick(state, Date.now());
+    renderHud();
+    if (changed) showEndScreen();
+  }
+
+  function startTimer() {
+    stopTimer();
+    timerId = window.setInterval(onTick, 250);
+  }
+
+  /* ---------- actions ---------- */
+
+  function beginRun() {
+    submitting = false;
+    hintTextByLevel = {};
+    restartArmedUntil = 0;
+    resetRestartButton();
+    Logic.start(state, Date.now());
+    showScreen('play');
+    renderAll();
+    startTimer();
+    $('answer-input').focus();
+  }
+
+  function onSelectLevel(index) {
+    if (Logic.selectLevel(state, index)) {
+      renderAll();
+      $('answer-input').focus();
+    }
+  }
+
+  function onSubmit(event) {
+    event.preventDefault();
+    if (state.phase !== 'playing' || submitting) return;
+    var index = state.current;
+    if (state.completed[index]) return;
+    var value = $('answer-input').value;
+    if (!value.trim()) {
+      setFeedback('warn', 'Type an answer first.');
+      return;
+    }
+    submitting = true;
+    $('btn-submit').disabled = true;
+    Levels.checkAnswer(levels[index].id, value).then(function (result) {
+      submitting = false;
+      var now = Date.now();
+      if (result.correct) {
+        var outcome = Logic.applyCorrect(state, index, result.fragment, now);
+        if (state.phase !== 'playing') { renderHud(); showEndScreen(); return; }
+        if (outcome.awarded) {
+          renderHud();
+          renderNav();
+          renderPuzzle();  // shows the next unsolved level (and clears old messages)
+          setFeedback('good', 'Correct! +' + state.config.completion_reward + ' credits. Now on Level ' +
+            levels[state.current].id + '.');
+          var explanation = $('explanation');
+          explanation.hidden = false;
+          explanation.textContent = '';
+          var title = document.createElement('strong');
+          title.textContent = 'Level ' + levels[index].id + ' explained: ';
+          explanation.appendChild(title);
+          explanation.appendChild(document.createTextNode(result.explanation));
+          $('answer-input').focus();
+        }
+      } else {
+        var wrong = Logic.applyWrong(state, index, now);
+        if (state.phase !== 'playing') { renderHud(); showEndScreen(); return; }
+        renderHud();
+        $('btn-submit').disabled = false;
+        if (wrong.penalised) {
+          setFeedback('bad', 'Access denied. -' + state.config.wrong_penalty + ' credits. Streak reset.');
+        }
+        var input = $('answer-input');
+        input.focus();
+        input.select();
+      }
+    }).catch(function () {
+      submitting = false;
+      $('btn-submit').disabled = state.completed[index];
+      setFeedback('warn', 'Could not reach the server. No penalty applied - try again.');
+    });
+  }
+
+  function onHint() {
+    if (state.phase !== 'playing') return;
+    var index = state.current;
+    if (state.completed[index]) return;
+    if (hintTextByLevel[index]) {
+      renderPuzzle({ keepFeedback: true, keepExplanation: true, keepInput: true });
+      return;
+    }
+    var button = $('btn-hint');
+    button.disabled = true;
+    Levels.fetchHint(levels[index].id).then(function (hint) {
+      var result = Logic.applyHint(state, index, Date.now());
+      if (state.phase !== 'playing') { renderHud(); showEndScreen(); return; }
+      if (result.allowed) {
+        hintTextByLevel[index] = hint;
+        renderHud();
+        renderPuzzle({ keepFeedback: true, keepExplanation: true, keepInput: true });
+        if (result.charged) {
+          setFeedback('warn', 'Hint revealed. -' + state.config.hint_cost + ' credits.');
+        }
+      }
+    }).catch(function () {
+      button.disabled = false;
+      setFeedback('warn', 'Could not load the hint. No credits were charged.');
+    });
+  }
+
+  function resetRestartButton() {
+    var button = $('btn-restart');
+    button.textContent = 'Restart';
+    button.classList.remove('armed');
+  }
+
+  function onRestart() {
+    var now = Date.now();
+    if (now < restartArmedUntil) {
+      beginRun();
+      return;
+    }
+    restartArmedUntil = now + RESTART_CONFIRM_MS;
+    var button = $('btn-restart');
+    button.textContent = 'Confirm restart';
+    button.classList.add('armed');
+    setFeedback('warn', 'Press Restart again within 4 seconds to reset the whole run.');
+    window.setTimeout(function () {
+      if (Date.now() >= restartArmedUntil) { restartArmedUntil = 0; resetRestartButton(); }
+    }, RESTART_CONFIRM_MS + 50);
+  }
+
+  /* ---------- share ---------- */
+
+  function shareScore(statusId) {
+    var status = $(statusId);
+    var text = Logic.shareText(state);
+    var url = window.location.href.split('#')[0];
+
+    function fallbackCopy() {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
+        return navigator.clipboard.writeText(text + ' ' + url).then(function () {
+          status.textContent = 'Score copied to clipboard.';
+        });
+      }
+      return Promise.reject(new Error('no clipboard'));
+    }
+
+    function showManual() {
+      status.textContent = '';
+      var label = document.createElement('label');
+      label.textContent = 'Copy your score: ';
+      var field = document.createElement('input');
+      field.type = 'text';
+      field.readOnly = true;
+      field.value = text + ' ' + url;
+      field.className = 'share-field';
+      label.appendChild(field);
+      status.appendChild(label);
+      field.focus();
+      field.select();
+    }
+
+    if (typeof navigator.share === 'function') {
+      navigator.share({ title: 'HACK THE SYSTEM', text: text, url: url }).then(function () {
+        status.textContent = 'Shared!';
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') { status.textContent = 'Share cancelled.'; return; }
+        fallbackCopy().catch(showManual);
+      });
+    } else {
+      fallbackCopy().catch(showManual);
+    }
+  }
+
+  /* ---------- startup ---------- */
+
+  function showLoadError(message) {
+    var box = $('load-error');
+    box.textContent = message;
+    box.hidden = false;
+  }
+
+  function init() {
+    Promise.all([Levels.loadConfig(), Levels.loadLevels()]).then(function (results) {
+      var config = results[0];
+      levels = results[1];
+      if (levels.length !== config.level_count) throw new Error('Level count mismatch');
+      state = Logic.createState(config);
+      showBest();
+      $('loading').hidden = true;
+      showScreen('intro', false);
+    }).catch(function () {
+      $('loading').hidden = true;
+      showLoadError('Could not load the game data. Please reload the page.');
+    });
+  }
+
+  $('btn-start').addEventListener('click', beginRun);
+  $('answer-form').addEventListener('submit', onSubmit);
+  $('btn-hint').addEventListener('click', onHint);
+  $('btn-restart').addEventListener('click', onRestart);
+  $('btn-gameover-again').addEventListener('click', beginRun);
+  $('btn-victory-again').addEventListener('click', beginRun);
+  $('btn-gameover-share').addEventListener('click', function () { shareScore('gameover-share-status'); });
+  $('btn-victory-share').addEventListener('click', function () { shareScore('victory-share-status'); });
+
+  // Test/debug hook: read-only snapshot of the game state (no way to change it).
+  window.__htsSnapshot = function () { return JSON.parse(JSON.stringify(state)); };
+
+  init();
+})();
+
+</script>
+</body>
+</html>
